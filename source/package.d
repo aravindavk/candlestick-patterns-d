@@ -201,6 +201,40 @@ struct OHLC
 
         return false;
     }
+
+    bool isBullishMarubozu(size_t idx)
+    {
+        if (isRed(idx)) return false;
+
+        auto highPct = (high[idx] - close[idx]) * 100.0 / close[idx];
+        auto lowPct = (open[idx] - low[idx]) * 100.0 / open[idx];
+
+        // If the gap between high and close is zero or negligible difference
+        // and same for the gap between open and low.
+        //
+        //  | |
+        //  | |
+        //  | |
+        //
+        return highPct < 0.3 && lowPct < 0.3;
+    }
+
+    bool isBearishMarubozu(size_t idx)
+    {
+        if (isGreen(idx)) return false;
+
+        auto highPct = (high[idx] - open[idx]) * 100.0 / open[idx];
+        auto lowPct = (close[idx] - low[idx]) * 100.0 / close[idx];
+
+        // If the gap between high and close is zero or negligible difference
+        // and same for the gap between open and low.
+        //
+        //  |||
+        //  |||
+        //  |||
+        //
+        return highPct < 0.3 && lowPct < 0.3;
+    }
 }
 
 unittest
@@ -217,14 +251,16 @@ unittest
             "d13", "d14", // Bearish Harami (Red second candle)
             "d15", "d16", // Dark Cloud Cover
             "d17", "d18", // Piercing
+            "d19",        // Bullish Marubozu
+            "d20",        // Bearish Marubozu
             ],
-        open:  [100, 105, 100,  80,  90, 110, 100,  70, 100,  90,  60,  90,  60,  70,  60, 100, 100,  60],
-        high:  [110, 120, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 100, 110, 110, 100],
-        low:   [ 90,  80,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  80,  60,  60,  55],
-        close: [105,  85,  90, 110, 100,  80,  60,  90,  60,  70, 100,  70, 100,  90,  90,  70,  70,  90]
+        open:  [100, 105, 100,  80,  90, 110, 100,  70, 100,  90,  60,  90,  60,  70,  60, 100, 100,  60, 100, 110],
+        high:  [110, 120, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 100, 110, 110, 100, 110, 110],
+        low:   [ 90,  80,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  80,  60,  60,  55, 100, 100],
+        close: [105,  85,  90, 110, 100,  80,  60,  90,  60,  70, 100,  70, 100,  90,  90,  70,  70,  90, 110, 100]
         );
 
-    assert(data.length == 18);
+    assert(data.length == 20);
     assert(data.isGreen(0));
     assert(data.isRed(1));
     assert(data.isWhite(0));
@@ -237,6 +273,8 @@ unittest
     assert(data.isBearishHarami(13));
     assert(data.isDarkCloudCover(15));
     assert(data.isPiercing(17));
+    assert(data.isBullishMarubozu(18));
+    assert(data.isBearishMarubozu(19));
 
     auto data1 = OHLC.fromCandles([Candle("d1", 100, 110, 90, 105), Candle("d2", 105, 120, 80, 85)]);
     assert(data1.length == 2);
