@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/candlestick-patterns
+candlestick-patterns.so
+candlestick-patterns.dylib
+candlestick-patterns.dll
+candlestick-patterns.a
+candlestick-patterns.lib
+candlestick-patterns-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
