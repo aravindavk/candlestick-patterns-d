@@ -1,4 +1,4 @@
-name "candlestick-patterns"
+name "candlestick_patterns"
 description "Identify Candlestick patterns for the given OHLC data"
 authors "Aravinda VK <vkaravinda7@gmail.com>"
 copyright "Copyright © 2024, Aravinda VK <vkaravinda7@gmail.com>"
