@@ -1,5 +1,14 @@
 module candlestick_patterns;
 
+struct Candle
+{
+    string date;
+    double open;
+    double high;
+    double low;
+    double close;
+}
+
 struct OHLC
 {
     string[] date;
@@ -7,6 +16,20 @@ struct OHLC
     double[] high;
     double[] low;
     double[] close;
+
+    static OHLC fromCandles(Candle[] candles)
+    {
+        OHLC data;
+        foreach(candle; candles)
+        {
+            data.date ~= candle.date;
+            data.open ~= candle.open;
+            data.high ~= candle.high;
+            data.low ~= candle.low;
+            data.close ~= candle.close;
+        }
+        return data;
+    }
 
     size_t length()
     {
@@ -134,6 +157,50 @@ struct OHLC
 
         return false;
     }
+
+    bool isDarkCloudCover(size_t currentIdx)
+    {
+        if (currentIdx <= 0)
+            return false;
+
+        auto prevIdx = currentIdx - 1;
+
+        // Prev candle is Green
+        // Current candle is Red
+        // Current candle opens above the previous close but closes between prev open and close
+        //      |
+        //  |  |||
+        // | | |||
+        // | | |||
+        // | |  |
+        //  |
+        if (isGreen(prevIdx) && isRed(currentIdx) && open[currentIdx] > close[prevIdx] && open[prevIdx] < close[currentIdx] && close[currentIdx] < close[prevIdx])
+            return true;
+
+        return false;
+    }
+
+    bool isPiercing(size_t currentIdx)
+    {
+        if (currentIdx <= 0)
+            return false;
+
+        auto prevIdx = currentIdx - 1;
+
+        // Prev candle is Red
+        // Current candle is Green
+        // Current candle opens below the previous close but closes between prev open and close
+        //  |
+        // |||  |
+        // ||| | |
+        // ||| | |
+        //  |  | |
+        //      |
+        if (isRed(prevIdx) && isGreen(currentIdx) && open[currentIdx] < close[prevIdx] && open[prevIdx] > close[currentIdx] && close[currentIdx] > close[prevIdx])
+            return true;
+
+        return false;
+    }
 }
 
 unittest
@@ -148,14 +215,16 @@ unittest
             "d9", "d10",  // Bullish Harami (Red second candle)
             "d11", "d12", // Bearish Harami (Green second candle)
             "d13", "d14", // Bearish Harami (Red second candle)
+            "d15", "d16", // Dark Cloud Cover
+            "d17", "d18", // Piercing
             ],
-        open:  [100, 105, 100,  80,  90, 110, 100,  70, 100,  90,  60,  90,  60,  70],
-        high:  [110, 120, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115],
-        low:   [ 90,  80,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75],
-        close: [105,  85,  90, 110, 100,  80,  60,  90,  60,  70, 100,  70, 100,  90]
+        open:  [100, 105, 100,  80,  90, 110, 100,  70, 100,  90,  60,  90,  60,  70,  60, 100, 100,  60],
+        high:  [110, 120, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 105, 115, 100, 110, 110, 100],
+        low:   [ 90,  80,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  85,  75,  80,  60,  60,  55],
+        close: [105,  85,  90, 110, 100,  80,  60,  90,  60,  70, 100,  70, 100,  90,  90,  70,  70,  90]
         );
 
-    assert(data.length == 14);
+    assert(data.length == 18);
     assert(data.isGreen(0));
     assert(data.isRed(1));
     assert(data.isWhite(0));
@@ -166,4 +235,11 @@ unittest
     assert(data.isBullishHarami(9));
     assert(data.isBearishHarami(11));
     assert(data.isBearishHarami(13));
+    assert(data.isDarkCloudCover(15));
+    assert(data.isPiercing(17));
+
+    auto data1 = OHLC.fromCandles([Candle("d1", 100, 110, 90, 105), Candle("d2", 105, 120, 80, 85)]);
+    assert(data1.length == 2);
+    assert(data1.isGreen(0));
+    assert(data1.isRed(1));
 }
