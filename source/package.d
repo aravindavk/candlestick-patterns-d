@@ -1,5 +1,9 @@
 module candlestick_patterns;
 
+import std.traits : EnumMembers;
+import std.array : replace;
+import std.conv : to;
+
 struct Candle
 {
     string date;
@@ -8,6 +12,22 @@ struct Candle
     double low;
     double close;
 }
+
+enum CandlePattern
+{
+    green,
+    red,
+    bullishMarubozu,
+    bearishMarubozu,
+    bullishEngulfing,
+    bearishEngulfing,
+    bullishHarami,
+    bearishHarami,
+    darkCloudCover,
+    piercing
+}
+
+alias CandlePatterns = CandlePattern[];
 
 struct OHLC
 {
@@ -41,19 +61,9 @@ struct OHLC
         return close[idx] > open[idx];
     }
 
-    bool isWhite(size_t idx)
-    {
-        return isGreen(idx);
-    }
-
     bool isRed(size_t idx)
     {
         return close[idx] < open[idx];
-    }
-
-    bool isBlack(size_t idx)
-    {
-        return isRed(idx);
     }
 
     bool isBullishEngulfing(size_t currentIdx)
@@ -235,6 +245,28 @@ struct OHLC
         //
         return highPct < 0.3 && lowPct < 0.3;
     }
+
+    private static string patternFuncName(string member)
+    {
+        import std.ascii : toUpper;
+        auto name = member.replace("CandlePattern.", "");
+        return "is" ~ (name[0].toUpper ~ name[1..$]);
+    }
+
+    CandlePatterns[] patterns()
+    {
+        CandlePatterns[] output;
+        foreach(idx, dte; date)
+        {
+            CandlePatterns p;
+            static foreach (member; EnumMembers!CandlePattern)
+            {
+                mixin("if (" ~  patternFuncName(member.to!string) ~ "(idx)) p ~= member;");
+            }
+            output ~= p;
+        }
+        return output;
+    }
 }
 
 unittest
@@ -263,8 +295,6 @@ unittest
     assert(data.length == 20);
     assert(data.isGreen(0));
     assert(data.isRed(1));
-    assert(data.isWhite(0));
-    assert(data.isBlack(1));
     assert(data.isBullishEngulfing(3));
     assert(data.isBearishEngulfing(5));
     assert(data.isBullishHarami(7));
@@ -275,6 +305,11 @@ unittest
     assert(data.isPiercing(17));
     assert(data.isBullishMarubozu(18));
     assert(data.isBearishMarubozu(19));
+
+    import std.stdio;
+    auto patterns = data.patterns;
+    foreach(idx, date; data.date)
+        writefln("%4s  %s", date, patterns[idx]);
 
     auto data1 = OHLC.fromCandles([Candle("d1", 100, 110, 90, 105), Candle("d2", 105, 120, 80, 85)]);
     assert(data1.length == 2);
